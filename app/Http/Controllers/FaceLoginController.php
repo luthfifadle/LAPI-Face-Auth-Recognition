@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use App\Models\User;
 use Exception;
 
@@ -37,6 +39,7 @@ class FaceLoginController extends Controller
             $user->name = $request->name;
             $user->email = $request->email;
             $user->password = $request->password;
+            $user->face_image_path = $path;
             $user->face_data = json_encode($faceData);
             $user->save();
 
@@ -60,18 +63,20 @@ class FaceLoginController extends Controller
             $pythonScript = base_path('scripts/recognize_face.py');
             $imagePath = storage_path('app/public/' . $path);
 
-            $output = shell_exec("python3 $pythonScript $imagePath");
-            $faceData = json_decode($output, true);
+            $users = User::where('face_image_path', '!=', null)->get();
 
-            // Cocokkan data wajah dengan database
-            $user = User::whereJsonContains('face_data', $faceData)->first();
+            foreach ($users as $item) {
+                $imagePathExist = storage_path('app/public/' . $item->face_image_path);
+                $output = shell_exec("python3 $pythonScript $imagePath $imagePathExist");
+                $faceData = json_decode($output, true);
 
-            if ($user) {
-                Auth::login($user);
-                return response()->json(['message' => 'Login successful.', 'user' => $user]);
+                if ($faceData == "true") {
+                    Auth::login($item);
+                    return response()->json(['message' => 'Login successful.', 'user' => $item]);
+                }
             }
 
-            return response()->json(['message' => 'Face not recognized.'], 401);
+            return response()->json(['message' => 'Login Failed.', 'user' => null]);
         } catch (Exception $e) {
             return $e->getMessage();
         }

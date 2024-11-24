@@ -15,9 +15,13 @@ use App\Http\Controllers\FaceLoginController;
 |
 */
 
+Route::get('/csrf-token', function () {
+    return response()->json(['csrfToken' => csrf_token()]);
+});
 
 Route::post('/register-face', [FaceLoginController::class, 'registerFace']);
 Route::post('/login-face', [FaceLoginController::class, 'loginWithFace']);
+
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });

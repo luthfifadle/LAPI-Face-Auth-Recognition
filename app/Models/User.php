@@ -21,7 +21,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'face_data'
+        'face_data',
+        'face_encoding',
+        'face_image_path'
     ];
 
     /**
